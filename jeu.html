@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>ISMAC - Jeu</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<h1>Manche <span id="numManche"></span>/5</h1>
+
+<img id="photo" src="" alt="Photo de la manche">
+
+<div id="timer" class="green">60</div>
+
+<div id="inputs">
+    <input type="number" id="inputAge" placeholder="Âge">
+    <input type="text" id="inputVille" placeholder="Ville">
+    <input type="number" id="inputJour" placeholder="Jour">
+    <input type="number" id="inputMois" placeholder="Mois">
+    <input type="number" id="inputAnnee" placeholder="Année">
+</div>
+
+<button id="valider">Valider</button>
+
+<script src="jeu.js"></script>
+</body>
+</html>
