@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISMAC - Jeu de Quiz</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div id="screen-home" class="screen active">
+            <h1 class="logo-title">ISMAC</h1>
+            <p style="margin-bottom: 20px; color: #7f8c8d;">Le quiz de rapidité synchronisé</p>
+            <button id="btn-go-create" class="btn primary">Créer une partie</button>
+            <button id="btn-go-join" class="btn secondary">Rejoindre une partie</button>
+        </div>
+
+        <div id="screen-create" class="screen">
+            <h2>Créer la salle</h2>
+            <input type="text" id="host-name" placeholder="Votre Pseudo" maxlength="12">
+            <button id="btn-create-room" class="btn primary">Générer la salle</button>
+            <button class="btn back" onclick="showScreen('screen-home')">Retour</button>
+        </div>
+
+        <div id="screen-join" class="screen">
+            <h2>Rejoindre</h2>
+            <input type="text" id="player-name" placeholder="Votre Pseudo" maxlength="12">
+            <input type="text" id="room-code-input" placeholder="Code (ex: ISMAC-XXXX)" maxlength="12" style="text-transform:uppercase;">
+            <p id="join-error" class="error"></p>
+            <button id="btn-join-room" class="btn primary">Entrer dans le lobby</button>
+            <button class="btn back" onclick="showScreen('screen-home')">Retour</button>
+        </div>
+
+        <div id="screen-lobby" class="screen">
+            <h2>Lobby</h2>
+            <div class="room-code-display">Code: <span id="display-room-code">----</span></div>
+            <ul id="lobby-player-list"></ul>
+            <div id="host-controls" class="hidden">
+                <button id="btn-start-game" class="btn start">Lancer la partie</button>
+            </div>
+            <div id="guest-waiting" class="hidden">
+                <p>En attente de l'hôte...</p>
+            </div>
+        </div>
+
+        <div id="screen-game" class="screen">
+            <div class="game-header">
+                <span id="round-indicator">Manche 1/5</span>
+                <span id="timer">01:00</span>
+            </div>
+            <div class="photo-container"><img id="game-image" src="" alt="Photo ISMAC"></div>
+            <div class="inputs-grid">
+                <input type="number" id="ans-mois-relatif" placeholder="Mois (Nombre)">
+                <input type="number" id="ans-day" placeholder="Jour">
+                <input type="number" id="ans-month" placeholder="Mois (1-12)">
+                <input type="number" id="ans-year" placeholder="Année">
+                <input type="text" id="ans-city" placeholder="Ville">
+            </div>
+            <button id="btn-submit-answer" class="btn primary">Valider (STOP !)</button>
+            <p id="waiting-msg" class="hidden">Vérification des scores...</p>
+        </div>
+
+        <div id="screen-leaderboard" class="screen">
+            <h2>Résultats de la manche</h2>
+            <div id="solution-box" class="solution-card">
+                <h3>Réponse correcte :</h3>
+                <p id="correct-answer-text"></p>
+            </div>
+            <ul id="leaderboard-list"></ul>
+            <p id="leaderboard-timer">Manche suivante bientôt...</p>
+        </div>
+
+        <div id="screen-final" class="screen">
+            <h1>🏆 Podium Final 🏆</h1>
+            <div id="winner-display"><span id="winner-name">---</span></div>
+            <ul id="final-list"></ul>
+            <button id="btn-restart" class="btn primary hidden">Rejouer</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>
