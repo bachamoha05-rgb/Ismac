@@ -11,8 +11,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-// --- DONNÉES PHOTOS ---
-// Note : Le premier chiffre de "answers" correspond maintenant au nombre de mois
+// --- DONNÉES PHOTOS (Chemin mis à jour vers DB_PHOTOS) ---
 const DB_PHOTOS = [
     { src: "DB_PHOTOS/photo1.jpg", answers: { moisRelatif: 6, day: 22, month: 11, year: 2025, city: "Avignon" } },
     { src: "DB_PHOTOS/photo2.jpg", answers: { moisRelatif: 3, day: 29, month: 8, year: 2025, city: "Firminy" } },
