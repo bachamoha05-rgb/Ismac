@@ -4,80 +4,505 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ISMAC - Jeu de Quiz</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --bg:       #0a0a0a;
+            --surface:  #111111;
+            --border:   #1e1e1e;
+            --neon:     #f5a623;
+            --neon-dim: #7a520f;
+            --text:     #e8e0d0;
+            --muted:    #5a5a5a;
+            --danger:   #e05c5c;
+            --success:  #4ecf8a;
+            --glow:     0 0 12px rgba(245,166,35,0.5), 0 0 32px rgba(245,166,35,0.2);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* Scanline overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.15) 2px,
+                rgba(0,0,0,0.15) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Ambient glow */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(ellipse, rgba(245,166,35,0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+        }
+
+        /* ── SCREENS ── */
+        .screen { display: none; animation: fadeUp 0.3s ease; }
+        .screen.active { display: flex; flex-direction: column; gap: 14px; }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── LOGO ── */
+        .logo-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: clamp(72px, 20vw, 110px);
+            letter-spacing: 0.12em;
+            color: var(--neon);
+            text-shadow: var(--glow);
+            line-height: 1;
+            text-align: center;
+            margin-bottom: -8px;
+        }
+
+        .logo-sub {
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        /* ── HEADINGS ── */
+        h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 36px;
+            letter-spacing: 0.1em;
+            color: var(--neon);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            font-size: 11px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px 20px;
+            border: none;
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.05);
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .btn:hover::after { opacity: 1; }
+        .btn:active { transform: scale(0.98); }
+
+        .btn.primary {
+            background: var(--neon);
+            color: #0a0a0a;
+            box-shadow: 0 0 20px rgba(245,166,35,0.35);
+        }
+        .btn.primary:hover {
+            box-shadow: 0 0 30px rgba(245,166,35,0.6);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            color: var(--neon);
+            border: 1px solid var(--neon-dim);
+        }
+        .btn.secondary:hover {
+            border-color: var(--neon);
+            box-shadow: 0 0 12px rgba(245,166,35,0.2);
+        }
+
+        .btn.back {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid var(--border);
+            font-size: 11px;
+        }
+        .btn.back:hover { color: var(--text); border-color: var(--muted); }
+
+        .btn.start {
+            background: var(--success);
+            color: #0a0a0a;
+            font-size: 14px;
+            box-shadow: 0 0 20px rgba(78,207,138,0.3);
+        }
+        .btn.start:hover { box-shadow: 0 0 32px rgba(78,207,138,0.55); }
+
+        /* ── INPUTS ── */
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -moz-appearance: textfield;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        input::placeholder { color: var(--muted); }
+        input:focus {
+            border-color: var(--neon-dim);
+            box-shadow: 0 0 0 2px rgba(245,166,35,0.12);
+        }
+
+        /* ── ROOM CODE ── */
+        .room-code-display {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 16px 20px;
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .room-code-display span {
+            display: block;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            letter-spacing: 0.18em;
+            color: var(--neon);
+            text-shadow: var(--glow);
+            margin-top: 4px;
+        }
+
+        /* ── PLAYER LIST ── */
+        ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+
+        #lobby-player-list li {
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ── GAME HEADER ── */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        #round-indicator {
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        #timer {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 30px;
+            letter-spacing: 0.1em;
+            color: var(--neon);
+            text-shadow: var(--glow);
+        }
+
+        /* ── PHOTO ── */
+        .photo-container {
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+        }
+        .photo-container::before {
+            content: 'CHARGEMENT...';
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            letter-spacing: 0.3em;
+            color: var(--muted);
+        }
+        .photo-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── INPUTS GRID ── */
+        .inputs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .inputs-grid input:last-child {
+            grid-column: 1 / -1;
+        }
+
+        /* ── WAITING MSG ── */
+        #waiting-msg {
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--success);
+            padding: 14px;
+            background: rgba(78,207,138,0.06);
+            border: 1px solid rgba(78,207,138,0.2);
+        }
+
+        /* ── SOLUTION CARD ── */
+        .solution-card {
+            background: var(--surface);
+            border: 1px solid var(--neon-dim);
+            padding: 16px 18px;
+        }
+        .solution-card h3 { color: var(--neon); }
+        .solution-card p  { font-size: 14px; line-height: 1.6; }
+
+        /* ── LEADERBOARD / FINAL LIST ── */
+        #leaderboard-list li,
+        #final-list li {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            gap: 10px;
+        }
+
+        #leaderboard-list li:first-child,
+        #final-list li:first-child {
+            border-color: var(--neon-dim);
+            background: rgba(245,166,35,0.05);
+        }
+
+        #leaderboard-list li span,
+        #final-list li span {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px;
+            color: var(--neon);
+            letter-spacing: 0.05em;
+        }
+
+        .stop-badge {
+            font-size: 9px;
+            letter-spacing: 0.2em;
+            background: var(--success);
+            color: #0a0a0a;
+            padding: 2px 6px;
+            font-weight: 500;
+        }
+
+        #leaderboard-timer {
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* ── FINAL SCREEN ── */
+        #screen-final h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 48px;
+            letter-spacing: 0.12em;
+            color: var(--neon);
+            text-shadow: var(--glow);
+            text-align: center;
+        }
+
+        #winner-display {
+            text-align: center;
+            padding: 24px;
+            background: var(--surface);
+            border: 1px solid var(--neon-dim);
+        }
+        #winner-display::before {
+            content: '🏆';
+            font-size: 48px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        #winner-name {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 42px;
+            letter-spacing: 0.15em;
+            color: var(--neon);
+            text-shadow: var(--glow);
+        }
+
+        /* ── UTILITIES ── */
+        .hidden { display: none !important; }
+        .error  { color: var(--danger); font-size: 11px; letter-spacing: 0.05em; min-height: 16px; }
+
+        #guest-waiting p {
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 16px;
+            border: 1px dashed var(--border);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50%       { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
+
+        <!-- HOME -->
         <div id="screen-home" class="screen active">
             <h1 class="logo-title">ISMAC</h1>
-            <p style="margin-bottom: 20px; color: #7f8c8d;">Le quiz de rapidité synchronisé</p>
+            <p class="logo-sub">Le quiz de rapidité synchronisé</p>
             <button id="btn-go-create" class="btn primary">Créer une partie</button>
-            <button id="btn-go-join" class="btn secondary">Rejoindre une partie</button>
+            <button id="btn-go-join"   class="btn secondary">Rejoindre une partie</button>
         </div>
 
+        <!-- CREATE -->
         <div id="screen-create" class="screen">
             <h2>Créer la salle</h2>
-            <input type="text" id="host-name" placeholder="Votre Pseudo" maxlength="12">
+            <input type="text" id="host-name" placeholder="Votre pseudo" maxlength="12">
             <button id="btn-create-room" class="btn primary">Générer la salle</button>
-            <button class="btn back" onclick="showScreen('screen-home')">Retour</button>
+            <button class="btn back" onclick="showScreen('screen-home')">← Retour</button>
         </div>
 
+        <!-- JOIN -->
         <div id="screen-join" class="screen">
             <h2>Rejoindre</h2>
-            <input type="text" id="player-name" placeholder="Votre Pseudo" maxlength="12">
+            <input type="text" id="player-name"     placeholder="Votre pseudo" maxlength="12">
             <input type="text" id="room-code-input" placeholder="Code (ex: ISMAC-XXXX)" maxlength="12" style="text-transform:uppercase;">
             <p id="join-error" class="error"></p>
             <button id="btn-join-room" class="btn primary">Entrer dans le lobby</button>
-            <button class="btn back" onclick="showScreen('screen-home')">Retour</button>
+            <button class="btn back" onclick="showScreen('screen-home')">← Retour</button>
         </div>
 
+        <!-- LOBBY -->
         <div id="screen-lobby" class="screen">
             <h2>Lobby</h2>
-            <div class="room-code-display">Code: <span id="display-room-code">----</span></div>
+            <div class="room-code-display">
+                Code de la salle
+                <span id="display-room-code">----</span>
+            </div>
             <ul id="lobby-player-list"></ul>
             <div id="host-controls" class="hidden">
-                <button id="btn-start-game" class="btn start">Lancer la partie</button>
+                <button id="btn-start-game" class="btn start">▶&nbsp; Lancer la partie</button>
             </div>
             <div id="guest-waiting" class="hidden">
                 <p>En attente de l'hôte...</p>
             </div>
         </div>
 
+        <!-- GAME -->
         <div id="screen-game" class="screen">
             <div class="game-header">
                 <span id="round-indicator">Manche 1/5</span>
                 <span id="timer">01:00</span>
             </div>
-            <div class="photo-container"><img id="game-image" src="" alt="Photo ISMAC"></div>
-            <div class="inputs-grid">
-                <input type="number" id="ans-mois-relatif" placeholder="Mois (Nombre)">
-                <input type="number" id="ans-day" placeholder="Jour">
-                <input type="number" id="ans-month" placeholder="Mois (1-12)">
-                <input type="number" id="ans-year" placeholder="Année">
-                <input type="text" id="ans-city" placeholder="Ville">
+            <div class="photo-container">
+                <img id="game-image" src="" alt="Photo ISMAC">
             </div>
-            <button id="btn-submit-answer" class="btn primary">Valider (STOP !)</button>
-            <p id="waiting-msg" class="hidden">Vérification des scores...</p>
+            <div class="inputs-grid">
+                <input type="number" id="ans-mois-relatif" placeholder="Mois (relatif)">
+                <input type="number" id="ans-day"          placeholder="Jour">
+                <input type="number" id="ans-month"        placeholder="Mois (1-12)">
+                <input type="number" id="ans-year"         placeholder="Année">
+                <input type="text"   id="ans-city"         placeholder="Ville">
+            </div>
+            <button id="btn-submit-answer" class="btn primary">⬛&nbsp; STOP — Valider</button>
+            <p id="waiting-msg" class="hidden">Réponse enregistrée — vérification en cours...</p>
         </div>
 
+        <!-- LEADERBOARD -->
         <div id="screen-leaderboard" class="screen">
-            <h2>Résultats de la manche</h2>
+            <h2>Résultats</h2>
             <div id="solution-box" class="solution-card">
-                <h3>Réponse correcte :</h3>
+                <h3>Réponse correcte</h3>
                 <p id="correct-answer-text"></p>
             </div>
             <ul id="leaderboard-list"></ul>
-            <p id="leaderboard-timer">Manche suivante bientôt...</p>
+            <p id="leaderboard-timer">Manche suivante dans quelques secondes...</p>
         </div>
 
+        <!-- FINAL -->
         <div id="screen-final" class="screen">
-            <h1>🏆 Podium Final 🏆</h1>
-            <div id="winner-display"><span id="winner-name">---</span></div>
+            <h1>Podium Final</h1>
+            <div id="winner-display">
+                <span id="winner-name">---</span>
+            </div>
             <ul id="final-list"></ul>
-            <button id="btn-restart" class="btn primary hidden">Rejouer</button>
+            <button id="btn-restart" class="btn primary hidden">↺&nbsp; Rejouer</button>
         </div>
+
     </div>
     <script src="game.js"></script>
 </body>
