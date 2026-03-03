@@ -1,6 +1,6 @@
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
-    apiKey: "AlzaSyA-VhnC4VBWXjl9POidNwGG8uLpi-bLaOwk",
+    apiKey: "AIzaSyA-VhnC4VBWXjl9POidNwGG8uLpi-bLaOwk",
     authDomain: "ismac-5c655.firebaseapp.com",
     databaseURL: "https://ismac-5c655-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "ismac-5c655",
@@ -281,3 +281,4 @@ document.getElementById('btn-restart').onclick = () => {
         });
     });
 };
+
