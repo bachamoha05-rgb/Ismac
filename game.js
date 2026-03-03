@@ -43,13 +43,17 @@ let nextRoundTimer = null;   // FIX : était window.nextTimer, source de collisi
 let endRoundCalled = false;  // FIX : garde-fou contre les appels multiples à endRound()
 
 // --- NAVIGATION ---
-function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-}
+// Dans game.js, après showScreen()
+document.getElementById('btn-go-create').onclick = () => showScreen('screen-mode');
+document.getElementById('btn-go-create-confirm').onclick = () => showScreen('screen-create');
 
-document.getElementById('btn-go-create').onclick = () => showScreen('screen-create');
-document.getElementById('btn-go-join').onclick   = () => showScreen('screen-join');
+function showToast() {
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+let toastTimeout = null;
 
 // --- CRÉATION DE SALLE ---
 document.getElementById('btn-create-room').onclick = async () => {
@@ -281,4 +285,5 @@ document.getElementById('btn-restart').onclick = () => {
         });
     });
 };
+
 
