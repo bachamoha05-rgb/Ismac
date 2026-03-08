@@ -115,7 +115,7 @@ function listenToRoom() {
             const me = data.players[myPlayerId];
             document.getElementById('btn-submit-answer').classList.toggle('hidden', me.hasSubmitted);
             document.getElementById('waiting-msg').classList.toggle('hidden', !me.hasSubmitted);
-            if (isHost && players.length > 0 && players.every(p => p.hasSubmitted)) endRound();
+            // STOP gere par btn-submit-answer directement
         }
         else if (data.gameState === 'LEADERBOARD') {
             showScreen('screen-leaderboard');
@@ -166,14 +166,12 @@ document.getElementById('btn-submit-answer').onclick = () => {
         if (month === correct.month)              points += 10;
         if (year  === correct.year)               points += 10;
         if (city  === correct.city.toLowerCase()) points += 20;
-        // Sauvegarde le score + hasSubmitted, puis stoppe la manche pour TOUS
-        roomRef.child('players/' + myPlayerId).update({
-            score: (data.players[myPlayerId].score || 0) + points,
-            hasSubmitted: true
-        }).then(() => {
-            // STOP = fin immédiate pour tout le monde
-            endRound();
-        });
+        // STOP : écrit score + LEADERBOARD en une seule opération atomique pour tout le monde
+        const newScore = (data.players[myPlayerId].score || 0) + points;
+        const stopUpdate = { gameState: 'LEADERBOARD' };
+        stopUpdate['players/' + myPlayerId + '/score'] = newScore;
+        stopUpdate['players/' + myPlayerId + '/hasSubmitted'] = true;
+        roomRef.update(stopUpdate);
         document.querySelectorAll('.inputs-grid input').forEach(i => i.value = '');
     });
 };
