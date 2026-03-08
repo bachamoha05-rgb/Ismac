@@ -166,9 +166,13 @@ document.getElementById('btn-submit-answer').onclick = () => {
         if (month === correct.month)              points += 10;
         if (year  === correct.year)               points += 10;
         if (city  === correct.city.toLowerCase()) points += 20;
+        // Sauvegarde le score + hasSubmitted, puis stoppe la manche pour TOUS
         roomRef.child('players/' + myPlayerId).update({
             score: (data.players[myPlayerId].score || 0) + points,
             hasSubmitted: true
+        }).then(() => {
+            // STOP = fin immédiate pour tout le monde
+            endRound();
         });
         document.querySelectorAll('.inputs-grid input').forEach(i => i.value = '');
     });
