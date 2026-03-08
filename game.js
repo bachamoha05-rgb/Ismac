@@ -70,16 +70,20 @@ document.getElementById('btn-create-room').onclick = async () => {
     listenToRoom();
 };
 
+// FIX : nettoyage du code + attente confirmation Firebase avant listenToRoom
 document.getElementById('btn-join-room').onclick = () => {
     myName = document.getElementById('player-name').value.trim();
-    currentRoomCode = document.getElementById('room-code-input').value.trim().toUpperCase();
+    currentRoomCode = document.getElementById('room-code-input').value.trim().replace(/\s+/g, '').toUpperCase();
     if (!myName || !currentRoomCode) return alert("Infos manquantes");
     db.ref('rooms/' + currentRoomCode).once('value', snap => {
-        if (!snap.exists()) return alert("Salle introuvable !");
+        if (!snap.exists()) return alert("Salle introuvable ! Vérifie le code : " + currentRoomCode);
         isHost = false;
         roomRef = db.ref('rooms/' + currentRoomCode);
-        roomRef.child('players/' + myPlayerId).set({ name: myName, score: 0, isHost: false, hasSubmitted: false });
-        listenToRoom();
+        // FIX : listenToRoom appelé dans le callback .then() pour garantir que
+        // le joueur est bien écrit dans Firebase avant d'écouter
+        roomRef.child('players/' + myPlayerId).set({
+            name: myName, score: 0, isHost: false, hasSubmitted: false
+        }).then(() => listenToRoom());
     });
 };
 
@@ -99,15 +103,14 @@ function listenToRoom() {
         else if (data.gameState === 'PLAYING') {
             showScreen('screen-game');
             const round = data.currentRound;
-            const photo = DB_PHOTOS[data.photoIndices[round]];
-            document.getElementById('game-image').src = photo.src;
+            document.getElementById('game-image').src = DB_PHOTOS[data.photoIndices[round]].src;
             document.getElementById('round-indicator').innerText = `Manche ${round + 1}/5`;
             endRoundCalled = false;
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                const timeLeft = Math.max(0, Math.floor((data.roundEndTime - Date.now()) / 1000));
-                document.getElementById('timer').innerText = `00:${timeLeft < 10 ? '0' + timeLeft : timeLeft}`;
-                if (isHost && timeLeft <= 0) { clearInterval(timerInterval); timerInterval = null; endRound(); }
+                const tl = Math.max(0, Math.floor((data.roundEndTime - Date.now()) / 1000));
+                document.getElementById('timer').innerText = `00:${tl < 10 ? '0' + tl : tl}`;
+                if (isHost && tl <= 0) { clearInterval(timerInterval); timerInterval = null; endRound(); }
             }, 1000);
             const me = data.players[myPlayerId];
             document.getElementById('btn-submit-answer').classList.toggle('hidden', me.hasSubmitted);
@@ -150,10 +153,10 @@ function startRound(idx) {
 
 document.getElementById('btn-submit-answer').onclick = () => {
     const moisRelatif = parseInt(document.getElementById('ans-mois-relatif').value) || 0;
-    const day         = parseInt(document.getElementById('ans-day').value)         || 0;
-    const month       = parseInt(document.getElementById('ans-month').value)       || 0;
-    const year        = parseInt(document.getElementById('ans-year').value)        || 0;
-    const city        = document.getElementById('ans-city').value.trim().toLowerCase();
+    const day   = parseInt(document.getElementById('ans-day').value)   || 0;
+    const month = parseInt(document.getElementById('ans-month').value) || 0;
+    const year  = parseInt(document.getElementById('ans-year').value)  || 0;
+    const city  = document.getElementById('ans-city').value.trim().toLowerCase();
     roomRef.once('value', snap => {
         const data    = snap.val();
         const correct = DB_PHOTOS[data.photoIndices[data.currentRound]].answers;
